@@ -2,7 +2,35 @@
 <html lang="en">
 
 <head>
-    <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'></script>
+    <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'>
+        
+
+// In-App Interstitial
+
+show_10111740({
+  type: 'inApp',
+  inAppSettings: {
+    frequency: 2,
+    capping: 0.1,
+    interval: 30,
+    timeout: 5,
+    everyPage: false
+  }
+})
+
+/*
+This value is decoded as follows:
+- show automatically 2 ads
+  within 0.1 hours (6 minutes)
+  with a 30-second interval between them
+  and a 5-second delay before the first one is shown.
+  The last digit, 0, means that the session will be saved when you navigate between pages.
+  If you set the last digit as 1, then at any transition between pages,
+  the session will be reset, and the ads will start again.
+*/
+
+
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dice Roller Mini App</title>
@@ -124,6 +152,8 @@
 
     </div>
 
+    
+
     <script>
         // Mapping of die value (1-6) to the indices of the pips (0-8) in the 3x3 grid that should be visible.
         // Grid layout: 0 1 2, 3 4 5, 6 7 8
@@ -234,4 +264,5 @@
 </body>
 
 </html>
+
 
