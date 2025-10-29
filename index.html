@@ -3,33 +3,6 @@
 
 <head>
     <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'>
-        
-
-// In-App Interstitial
-
-show_10111740({
-  type: 'inApp',
-  inAppSettings: {
-    frequency: 2,
-    capping: 0.1,
-    interval: 30,
-    timeout: 5,
-    everyPage: false
-  }
-})
-
-/*
-This value is decoded as follows:
-- show automatically 2 ads
-  within 0.1 hours (6 minutes)
-  with a 30-second interval between them
-  and a 5-second delay before the first one is shown.
-  The last digit, 0, means that the session will be saved when you navigate between pages.
-  If you set the last digit as 1, then at any transition between pages,
-  the session will be reset, and the ads will start again.
-*/
-
-
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -110,7 +83,7 @@ This value is decoded as follows:
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-    <script>
+    <div>
         
 
 // In-App Interstitial
@@ -137,7 +110,7 @@ This value is decoded as follows:
   the session will be reset, and the ads will start again.
 */
 
-    </script>
+    </div>
 
     <!-- Main Container -->
     <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8">
@@ -304,6 +277,7 @@ show_10111740('pop').then(() => {
 </body>
 
 </html>
+
 
 
 
