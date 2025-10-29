@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice Roller Mini App</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        /* Custom CSS for the Die */
+        .die-face {
+            width: 80px;
+            height: 80px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 8px;
+            transform: scale(1);
+            transition: transform 0.1s ease-in-out;
+        }
+
+        .die-face.rolling {
+            /* Simple animation to show activity */
+            animation: bounce 0.1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(-2px);
+            }
+
+            to {
+                transform: translateY(2px);
+            }
+        }
+
+        .pip {
+            background-color: #1e293b;
+            /* Dark pip color */
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            place-self: center;
+            opacity: 0;
+            /* Initially hidden */
+            transition: opacity 0.1s;
+        }
+
+        /* Utility classes for pip visibility (used by JS) */
+        .pip-visible {
+            opacity: 1;
+        }
+
+        /* Adjust die size for larger screens */
+        @media (min-width: 640px) {
+            .die-face {
+                width: 120px;
+                height: 120px;
+                border-radius: 16px;
+                padding: 12px;
+            }
+
+            .pip {
+                width: 16px;
+                height: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8">
+        <h1 class="text-3xl font-bold text-center text-gray-800">
+            🎲 Twin Dice Roller 🎲
+        </h1>
+
+        <!-- Dice Display Area -->
+        <div class="flex justify-center items-center space-x-6 md:space-x-10">
+            <!-- Die 1 Container -->
+            <div id="die1" class="die-face">
+                <!-- Pips are dynamically added/removed by JS, but we'll pre-add the structure for simplicity -->
+                <!-- The grid items (pips) are: 1 2 3, 4 5 6, 7 8 9 (index 0-8) -->
+                <span class="pip pip-0"></span><span class="pip pip-1"></span><span class="pip pip-2"></span>
+                <span class="pip pip-3"></span><span class="pip pip-4"></span><span class="pip pip-5"></span>
+                <span class="pip pip-6"></span><span class="pip pip-7"></span><span class="pip pip-8"></span>
+            </div>
+
+            <!-- Die 2 Container -->
+            <div id="die2" class="die-face">
+                <span class="pip pip-0"></span><span class="pip pip-1"></span><span class="pip pip-2"></span>
+                <span class="pip pip-3"></span><span class="pip pip-4"></span><span class="pip pip-5"></span>
+                <span class="pip pip-6"></span><span class="pip-7"></span><span class="pip pip-8"></span>
+            </div>
+        </div>
+
+        <!-- Total Display -->
+        <div class="text-center">
+            <p class="text-lg text-gray-600 mb-2">Current Total:</p>
+            <p id="total-display" class="text-6xl font-extrabold text-blue-600 transition duration-300">
+                0
+            </p>
+        </div>
+
+        <!-- Roll Button -->
+        <button id="roll-button"
+            class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50">
+            Roll Dice
+        </button>
+
+    </div>
+
+    <script>
+        // Mapping of die value (1-6) to the indices of the pips (0-8) in the 3x3 grid that should be visible.
+        // Grid layout: 0 1 2, 3 4 5, 6 7 8
+        const PIP_MAP = {
+            1: [4], // Center
+            2: [0, 8], // Top-Left, Bottom-Right
+            3: [0, 4, 8], // Top-Left, Center, Bottom-Right
+            4: [0, 2, 6, 8], // All corners
+            5: [0, 2, 4, 6, 8], // All corners + Center
+            6: [0, 2, 3, 5, 6, 8] // Top/Bottom rows excluding center, Middle row left/right
+        };
+
+        const die1Element = document.getElementById('die1');
+        const die2Element = document.getElementById('die2');
+        const rollButton = document.getElementById('roll-button');
+        const totalDisplay = document.getElementById('total-display');
+
+        /**
+         * Renders the pips on a die face based on the value.
+         * @param {HTMLElement} dieElement - The main die container.
+         * @param {number} value - The die roll value (1-6).
+         */
+        function renderDie(dieElement, value) {
+            const pips = dieElement.querySelectorAll('.pip');
+            const visiblePips = PIP_MAP[value] || [];
+
+            // 1. Hide all pips
+            pips.forEach(pip => pip.classList.remove('pip-visible'));
+
+            // 2. Show only the required pips based on the value
+            visiblePips.forEach(index => {
+                // Ensure the index exists and prevent errors if pips list is incomplete
+                if (pips[index]) {
+                    pips[index].classList.add('pip-visible');
+                }
+            });
+        }
+
+        /**
+         * Simulates the roll of a single die.
+         * @returns {number} The rolled value (1-6).
+         */
+        function rollSingleDie() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        /**
+         * Handles the main dice roll action.
+         */
+        function handleRoll() {
+            // Disable button during rolling animation
+            rollButton.disabled = true;
+            rollButton.textContent = 'Rolling...';
+            die1Element.classList.add('rolling');
+            die2Element.classList.add('rolling');
+
+            const rollDuration = 500; // milliseconds for the roll animation
+
+            // Visual 'rolling' effect: quickly flash through random values
+            let rollInterval = setInterval(() => {
+                renderDie(die1Element, rollSingleDie());
+                renderDie(die2Element, rollSingleDie());
+                totalDisplay.textContent = '?';
+            }, 50); // Faster update rate for the visual effect
+
+            // Stop the interval and show the final result
+            setTimeout(() => {
+                clearInterval(rollInterval);
+
+                const value1 = rollSingleDie();
+                const value2 = rollSingleDie();
+                const total = value1 + value2;
+
+                renderDie(die1Element, value1);
+                renderDie(die2Element, value2);
+
+                totalDisplay.textContent = total;
+
+                die1Element.classList.remove('rolling');
+                die2Element.classList.remove('rolling');
+                rollButton.disabled = false;
+                rollButton.textContent = 'Roll Dice';
+            }, rollDuration);
+        }
+
+        // --- Initialization ---
+
+        // 1. Attach event listener to the button
+        rollButton.addEventListener('click', handleRoll);
+
+        // 2. Initialize the dice to a starting state (e.g., value 1)
+        renderDie(die1Element, 1);
+        renderDie(die2Element, 1);
+        totalDisplay.textContent = '2';
+
+        // 3. Optional: Telegram Mini App specific setup (for UI close)
+        // Check if Telegram WebApp object is available (simulated for browser environment)
+        if (window.Telegram && window.Telegram.WebApp) {
+            // Inform Telegram app that the page is ready
+            Telegram.WebApp.ready();
+            // Set the viewport background color
+            Telegram.WebApp.setBackgroundColor('#f3f4f6');
+            // Set the main button text if needed, or close button logic
+            // For a simple app, we can just ensure the body background matches
+        }
+
+    </script>
+</body>
+
+</html>
