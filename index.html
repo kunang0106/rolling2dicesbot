@@ -83,34 +83,7 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-    <div>
-        
-
-// In-App Interstitial
-
-show_10111740({
-  type: 'inApp',
-  inAppSettings: {
-    frequency: 2,
-    capping: 0.1,
-    interval: 30,
-    timeout: 5,
-    everyPage: false
-  }
-})
-
-/*
-This value is decoded as follows:
-- show automatically 2 ads
-  within 0.1 hours (6 minutes)
-  with a 30-second interval between them
-  and a 5-second delay before the first one is shown.
-  The last digit, 0, means that the session will be saved when you navigate between pages.
-  If you set the last digit as 1, then at any transition between pages,
-  the session will be reset, and the ads will start again.
-*/
-
-    </div>
+   
 
     <!-- Main Container -->
     <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8">
@@ -147,7 +120,7 @@ This value is decoded as follows:
 
         <!-- Roll Button -->
         <button id="roll-button"
-            class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50">
+            class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50" onclick="redirectToUrl('https://otieu.com/4/10106971')">
             Roll Dice
         </button>
 
@@ -260,23 +233,11 @@ This value is decoded as follows:
             // Set the main button text if needed, or close button logic
             // For a simple app, we can just ensure the body background matches
         }
-
-
-// Rewarded Popup
-
-show_10111740('pop').then(() => {
-    // user watch ad till the end or close it in interstitial format
-    // your code to reward user for rewarded format
-}).catch(e => {
-    // user get error during playing ad
-    // do nothing or whatever you want
-})
-
-        
     </script>
 </body>
 
 </html>
+
 
 
 
