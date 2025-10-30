@@ -2,9 +2,8 @@
 <html lang="en">
 
 <head>
+    <!-- Actual Ad SDK Link -->
     <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'></script>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1971517303458969"
-     crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dice Roller Mini App</title>
@@ -84,7 +83,6 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4">
-   
 
     <!-- Main Container -->
     <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-6 md:p-8 space-y-8">
@@ -96,11 +94,9 @@
         <div class="flex justify-center items-center space-x-6 md:space-x-10">
             <!-- Die 1 Container -->
             <div id="die1" class="die-face">
-                <!-- Pips are dynamically added/removed by JS, but we'll pre-add the structure for simplicity -->
-                <!-- The grid items (pips) are: 1 2 3, 4 5 6, 7 8 9 (index 0-8) -->
                 <span class="pip pip-0"></span><span class="pip pip-1"></span><span class="pip pip-2"></span>
                 <span class="pip pip-3"></span><span class="pip pip-4"></span><span class="pip pip-5"></span>
-                <span class="pip pip-6"></span><span class="pip pip-7"></span><span class="pip pip-8"></span>
+                <span class="pip pip-6"></span><span class="pip-7"></span><span class="pip pip-8"></span>
             </div>
 
             <!-- Die 2 Container -->
@@ -121,80 +117,86 @@
 
         <!-- Roll Button -->
         <button id="roll-button"
-            class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50" onclick="redirectToUrl('https://otieu.com/4/10106971')">
+            class="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xl rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.98] focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50">
             Roll Dice
         </button>
+        
+        <p id="statusMessage" class="mt-4 text-sm text-gray-500 min-h-[1.25rem]">
+            Ready to roll.
+        </p>
 
     </div>
 
-    
-
     <script>
-        // Mapping of die value (1-6) to the indices of the pips (0-8) in the 3x3 grid that should be visible.
-        // Grid layout: 0 1 2, 3 4 5, 6 7 8
-        const PIP_MAP = {
-            1: [4], // Center
-            2: [0, 8], // Top-Left, Bottom-Right
-            3: [0, 4, 8], // Top-Left, Center, Bottom-Right
-            4: [0, 2, 6, 8], // All corners
-            5: [0, 2, 4, 6, 8], // All corners + Center
-            6: [0, 2, 3, 5, 6, 8] // Top/Bottom rows excluding center, Middle row left/right
-        };
+        // --- Firebase Globals (Required for environment) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // ---------------------------------------------------
 
+        // Ad State and Configuration (Persistent for the session)
+        let adSessionState = {
+            adsShown: 0,
+            lastAdTime: 0, 
+            cappingExpiration: 0,
+        };
+        const AD_CONFIG = {
+            frequency: 2,
+            capping: 0.1, // 0.1 hours = 6 minutes
+            interval: 30, // 30 seconds
+            timeout: 5,   // Original timeout (used for subsequent ads)
+            everyPage: false // Session persists across pages
+        };
+        const CAP_DURATION_MS = AD_CONFIG.capping * 3600 * 1000; // 6 minutes in milliseconds
+
+        // --- DOM Elements ---
         const die1Element = document.getElementById('die1');
         const die2Element = document.getElementById('die2');
         const rollButton = document.getElementById('roll-button');
         const totalDisplay = document.getElementById('total-display');
+        const statusMessage = document.getElementById('statusMessage');
 
-        /**
-         * Renders the pips on a die face based on the value.
-         * @param {HTMLElement} dieElement - The main die container.
-         * @param {number} value - The die roll value (1-6).
-         */
+        // --- Dice Rendering Logic ---
+        const PIP_MAP = {
+            1: [4],
+            2: [0, 8],
+            3: [0, 4, 8],
+            4: [0, 2, 6, 8],
+            5: [0, 2, 4, 6, 8],
+            6: [0, 2, 3, 5, 6, 8]
+        };
+
         function renderDie(dieElement, value) {
             const pips = dieElement.querySelectorAll('.pip');
             const visiblePips = PIP_MAP[value] || [];
-
-            // 1. Hide all pips
             pips.forEach(pip => pip.classList.remove('pip-visible'));
-
-            // 2. Show only the required pips based on the value
             visiblePips.forEach(index => {
-                // Ensure the index exists and prevent errors if pips list is incomplete
                 if (pips[index]) {
                     pips[index].classList.add('pip-visible');
                 }
             });
         }
 
-        /**
-         * Simulates the roll of a single die.
-         * @returns {number} The rolled value (1-6).
-         */
         function rollSingleDie() {
             return Math.floor(Math.random() * 6) + 1;
         }
 
-        /**
-         * Handles the main dice roll action.
-         */
-        function handleRoll() {
-            // Disable button during rolling animation
+        // --- Core Game Action ---
+        function executeDiceRoll() {
             rollButton.disabled = true;
             rollButton.textContent = 'Rolling...';
             die1Element.classList.add('rolling');
             die2Element.classList.add('rolling');
+            statusMessage.textContent = 'Executing dice roll.';
+            
+            const rollDuration = 500;
 
-            const rollDuration = 500; // milliseconds for the roll animation
-
-            // Visual 'rolling' effect: quickly flash through random values
             let rollInterval = setInterval(() => {
                 renderDie(die1Element, rollSingleDie());
                 renderDie(die2Element, rollSingleDie());
                 totalDisplay.textContent = '?';
-            }, 50); // Faster update rate for the visual effect
+            }, 50);
 
-            // Stop the interval and show the final result
             setTimeout(() => {
                 clearInterval(rollInterval);
 
@@ -204,44 +206,97 @@
 
                 renderDie(die1Element, value1);
                 renderDie(die2Element, value2);
-
                 totalDisplay.textContent = total;
 
                 die1Element.classList.remove('rolling');
                 die2Element.classList.remove('rolling');
                 rollButton.disabled = false;
                 rollButton.textContent = 'Roll Dice';
+                statusMessage.textContent = `Rolled: ${total}. Ready for next roll.`;
+                console.log(`[DICE ROLL] Game action executed. Total: ${total}.`);
             }, rollDuration);
         }
 
-        // --- Initialization ---
+        // --- Ad Control Logic (Modified for instant first ad) ---
+        
+        function checkAndRunAdOrRoll() {
+            const now = Date.now();
+            statusMessage.textContent = "Checking ad rules...";
+            console.log("--- Ad Rule Check Triggered ---");
+
+            // 1. Capping Reset Check (6 minutes)
+            if (now > adSessionState.cappingExpiration) {
+                adSessionState.adsShown = 0;
+                adSessionState.cappingExpiration = now + CAP_DURATION_MS;
+                console.log(`Capping reset. New period ends: ${new Date(adSessionState.cappingExpiration).toLocaleTimeString()}.`);
+            }
+
+            // 2. Frequency Limit Check (Max 2 ads)
+            if (adSessionState.adsShown >= AD_CONFIG.frequency) {
+                console.warn(`FAIL: Frequency limit reached (${adSessionState.adsShown} of ${AD_CONFIG.frequency}). Executing game action.`);
+                statusMessage.textContent = "Ad blocked by frequency cap. Rolling dice...";
+                executeDiceRoll();
+                return;
+            }
+
+            // 3. Interval Check (30 seconds)
+            const intervalMs = AD_CONFIG.interval * 1000;
+            if (adSessionState.lastAdTime > 0) {
+                const timeSinceLastAd = now - adSessionState.lastAdTime;
+                if (timeSinceLastAd < intervalMs) {
+                    const remainingDelay = Math.ceil((intervalMs - timeSinceLastAd) / 1000);
+                    console.warn(`FAIL: Interval not met. Wait ${remainingDelay}s more. Executing game action.`);
+                    statusMessage.textContent = `Ad blocked by interval (${remainingDelay}s left). Rolling dice...`;
+                    executeDiceRoll();
+                    return;
+                }
+            }
+            
+            // --- SUCCESS: All custom checks passed. Call the External Ad Function ---
+            if (typeof show_10111740 === 'function') {
+                
+                let adConfigToPass = { ...AD_CONFIG };
+
+                // Overwrite the timeout to 0 ONLY for the first ad
+                if (adSessionState.adsShown === 0) {
+                    adConfigToPass.timeout = 0;
+                    console.log("First ad request: Temporarily setting 'timeout' to 0 for instant display.");
+                }
+
+                console.log(`PASS: All checks passed. Calling external ad SDK with timeout: ${adConfigToPass.timeout}.`);
+                
+                // Call the actual SDK function
+                show_10111740({
+                    type: 'inApp',
+                    inAppSettings: adConfigToPass 
+                });
+                
+                // Optimistically update state
+                adSessionState.adsShown++;
+                adSessionState.lastAdTime = now;
+                statusMessage.textContent = "Ad triggered immediately.";
+                console.log(`SUCCESS: Ad triggered. Total: ${adSessionState.adsShown}.`);
+            } else {
+                console.error("WARNING: External ad SDK function 'show_10111740' is not available. Running game action.");
+                executeDiceRoll();
+            }
+        }
+
+        // --- Initialization and Event Listener ---
 
         // 1. Attach event listener to the button
-        rollButton.addEventListener('click', handleRoll);
+        rollButton.addEventListener('click', checkAndRunAdOrRoll);
 
-        // 2. Initialize the dice to a starting state (e.g., value 1)
+        // 2. Initialize the dice to a starting state
         renderDie(die1Element, 1);
         renderDie(die2Element, 1);
         totalDisplay.textContent = '2';
 
-        // 3. Optional: Telegram Mini App specific setup (for UI close)
-        // Check if Telegram WebApp object is available (simulated for browser environment)
-        if (window.Telegram && window.Telegram.WebApp) {
-            // Inform Telegram app that the page is ready
-            Telegram.WebApp.ready();
-            // Set the viewport background color
-            Telegram.WebApp.setBackgroundColor('#f3f4f6');
-            // Set the main button text if needed, or close button logic
-            // For a simple app, we can just ensure the body background matches
+        window.onload = () => {
+             console.log("Ad Logic Initialized. First click should trigger the ad instantly (timeout=0). Subsequent clicks are controlled by the 30s interval.");
         }
     </script>
 </body>
 
 </html>
-
-
-
-
-
-
 
