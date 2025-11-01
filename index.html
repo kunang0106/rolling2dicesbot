@@ -4,6 +4,7 @@
 <head>
     <!-- Actual Ad SDK Link -->
     <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dice Roller Mini App</title>
@@ -96,14 +97,14 @@
             <div id="die1" class="die-face">
                 <span class="pip pip-0"></span><span class="pip pip-1"></span><span class="pip pip-2"></span>
                 <span class="pip pip-3"></span><span class="pip pip-4"></span><span class="pip pip-5"></span>
-                <span class="pip pip-6"></span><span class="pip-7"></span><span class="pip pip-8"></span>
+                <span class="pip pip-6"></span><span class="pip pip-7"></span><span class="pip pip-8"></span>
             </div>
 
             <!-- Die 2 Container -->
             <div id="die2" class="die-face">
                 <span class="pip pip-0"></span><span class="pip pip-1"></span><span class="pip pip-2"></span>
                 <span class="pip pip-3"></span><span class="pip pip-4"></span><span class="pip pip-5"></span>
-                <span class="pip pip-6"></span><span class="pip-7"></span><span class="pip pip-8"></span>
+                <span class="pip pip-6"></span><span class="pip pip-7"></span><span class="pip pip-8"></span>
             </div>
         </div>
 
@@ -148,6 +149,10 @@
             everyPage: false // Session persists across pages
         };
         const CAP_DURATION_MS = AD_CONFIG.capping * 3600 * 1000; // 6 minutes in milliseconds
+
+        const AdController = window.Adsgram.init({ blockId: b2c70827a3c54151a0e59558d4af247a });
+
+        
 
         // --- DOM Elements ---
         const die1Element = document.getElementById('die1');
