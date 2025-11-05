@@ -3,7 +3,7 @@
 
 <head>
     <!-- Actual Ad SDK Link -->
-    <script src='//libtl.com/sdk.js' data-zone='10111740' data-sdk='show_10111740'></script>
+    
     <script type='text/javascript' src='//pl27991534.effectivegatecpm.com/29/3a/2d/293a2dfde77efce1840a6ec4c095c4ae.js'></script>
     <script type="text/javascript">
 	atOptions = {
@@ -234,69 +234,7 @@
 
         // --- Ad Control Logic (Modified for instant first ad) ---
         
-        function checkAndRunAdOrRoll() {
-            const now = Date.now();
-            statusMessage.textContent = "Checking ad rules...";
-            console.log("--- Ad Rule Check Triggered ---");
-
-            // 1. Capping Reset Check (6 minutes)
-            if (now > adSessionState.cappingExpiration) {
-                adSessionState.adsShown = 0;
-                adSessionState.cappingExpiration = now + CAP_DURATION_MS;
-                console.log(`Capping reset. New period ends: ${new Date(adSessionState.cappingExpiration).toLocaleTimeString()}.`);
-            }
-
-            // 2. Frequency Limit Check (Max 2 ads)
-            if (adSessionState.adsShown >= AD_CONFIG.frequency) {
-                console.warn(`FAIL: Frequency limit reached (${adSessionState.adsShown} of ${AD_CONFIG.frequency}). Executing game action.`);
-                statusMessage.textContent = "Ad blocked by frequency cap. Rolling dice...";
-                executeDiceRoll();
-                return;
-            }
-
-            // 3. Interval Check (30 seconds)
-            const intervalMs = AD_CONFIG.interval * 1000;
-            if (adSessionState.lastAdTime > 0) {
-                const timeSinceLastAd = now - adSessionState.lastAdTime;
-                if (timeSinceLastAd < intervalMs) {
-                    const remainingDelay = Math.ceil((intervalMs - timeSinceLastAd) / 1000);
-                    console.warn(`FAIL: Interval not met. Wait ${remainingDelay}s more. Executing game action.`);
-                    statusMessage.textContent = `Ad blocked by interval (${remainingDelay}s left). Rolling dice...`;
-                    executeDiceRoll();
-                    return;
-                }
-            }
-            
-            // --- SUCCESS: All custom checks passed. Call the External Ad Function ---
-            if (typeof show_10111740 === 'function') {
-                
-                let adConfigToPass = { ...AD_CONFIG };
-
-                // Overwrite the timeout to 0 ONLY for the first ad
-                if (adSessionState.adsShown === 0) {
-                    adConfigToPass.timeout = 0;
-                    console.log("First ad request: Temporarily setting 'timeout' to 0 for instant display.");
-                }
-
-                console.log(`PASS: All checks passed. Calling external ad SDK with timeout: ${adConfigToPass.timeout}.`);
-                
-                // Call the actual SDK function
-                show_10111740({
-                    type: 'inApp',
-                    inAppSettings: adConfigToPass 
-                });
-                
-                // Optimistically update state
-                adSessionState.adsShown++;
-                adSessionState.lastAdTime = now;
-                statusMessage.textContent = "Ad triggered immediately.";
-                console.log(`SUCCESS: Ad triggered. Total: ${adSessionState.adsShown}.`);
-            } else {
-                console.error("WARNING: External ad SDK function 'show_10111740' is not available. Running game action.");
-                executeDiceRoll();
-            }
-        }
-
+        
         // --- Initialization and Event Listener ---
 
         // 1. Attach event listener to the button
